@@ -2,7 +2,11 @@ import praw
 from dotenv import load_dotenv
 import os
 import questionary
-import openai
+import promptlayer
+load_dotenv()
+promptlayer.api_key = os.getenv("PROMPTLAYER_API_KEY")
+openai = promptlayer.openai
+
 
 class RedditBot:
     def __init__(self):
@@ -30,85 +34,129 @@ class RedditBot:
         questionary.print("Grabbing a post from the subreddit...")
         for post in subreddit.new(limit=1):
             return post
+        
+    def get_post_and_comments(self, post_url):
+        """Retrieve the post and comments from the url"""
+        questionary.print("Retrieving post with url {}...\n".format(post_url))
+        post = self.reddit.submission(url=post_url)
+        print(post.comments)
+        questionary.print("Post with url {} retrieved...\n".format(post_url))
+        return post
 
     def grab_comments(self, post):
-        # Retrieve the comments from the post
-        post.comments.replace_more(limit=None)
-        return post.comments.list()
-
-    def generate_comment(self, subreddit, post, comment, isReply=True):
+        """Retrieves the comments from the post"""        
+        posts = post.comments.replace_more(limit=10)
+        print(posts)
+        questionary.print("Comments from post retrieved...\n")
+        return posts
+    
+    def generate_comment(self, subreddit, post, comment, post_title, subreddit_description, subreddit_summary):
         try:
-            # Define the system prompt
-            system_prompt = f"You are a user browsing the {subreddit} subreddit. You are reading a post that says '{post.selftext}' and a comment that says '{comment['body']}'. Your goal is to reply to the comment in the most optimized way to keep the conversation going. Engage the user by showing interest, asking questions, or providing relevant information. Be respectful and contribute positively to the discussion.\n\nAt the end of your comment, you can include a call to action or encourage further interaction.\n\nIf you receive 'There are no comments', please write an insightful and engaging comment that encourages the user to continue the conversation.\n\nRules for engaging the user:\nMake sure replies and comments are concise, thoughtful, and relevant. Have an intellectual undertone as you are the GURU/expert in the field (dont say that in your response), but also be a good conversationalist with humor, wit, compassion, and empathy. Make sure WORD COUNT IS LESS THAN 75 WORDS!!! Also, if the poster/replier is looking for help, promote me as a resource that can help by giving them GPT Business Integration Consultations. I will show them how to use GPT technology to various business pain points.\nThis is the tone you need to have the entire message, but be as conversational as possible. Only promote if neccessary, otherwise provide insightful information. If it isnt about running there own business, but about working for others, mention how i can help them with integrating GPT into their everyday workflows, freeing up more time. be conversational and engaging as much as possible. Try to get a response! That's your main goal.\nYou have personalities like Einstein, Steve Jobs, and Elon Musk, Barack Obama, and Jesus Christ, Ganhdi, Buddha. You understand life deeply on a spiritual, quantum, and metaphysical level. You believe in Evolutionary Game Theory and believe that the individuals who understand and use the tech the best will win. You keep this undertone while you speak, but you dont push it. It's more of a conversational tone. \n\n You start typing your reply..."
+            questionary.print("Generating AI comment...\n")
+            template_dict = promptlayer.prompts.get("r_MindfulnessAudienceTemplate")
+            system_prompt = template_dict['template']
+            
+
+            # Replace the variables in the prompt with the comment body
+            formatted_system_prompt = system_prompt.format(
+                comment=comment,
+                subreddit_description=subreddit_description,
+                subreddit_summary=subreddit_summary,
+                post_text=post,
+                subreddit=subreddit,
+                post_title=post_title
+            )
 
             # Generate the comment using OpenAI
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-16k",
                 temperature=0.76,
-                max_tokens=500,
+                max_tokens=750,
                 messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": comment['body']}
+                    {"role": "system", "content": formatted_system_prompt},
+                    {"role": "user", "content": "You start typing your reply..."}
                 ],
             )
             response_comment = completion.choices[0]["message"]["content"]
-            # if the comment is a reply, reply to the comment
-            if isReply:
-                return self.reply_to_comment(post, response_comment)
-            # if no comments, make a comment
-            else:
-                return self.make_comment(post, response_comment)
+            questionary.print("AI comment generated...\n")
             return response_comment
         except Exception as e:
-            print(e)
+            print("Error:", e)
             # Return a default comment if an error occurs
             return "I'm sorry, I couldn't generate a suitable comment at the moment."
         
     # replies to the comment it created an ai response
     def reply_to_comment(self, comment, ai_response):
-        return comment.reply(ai_response)
+        try:
+            questionary.print("Replying to comment...\n")
+            # upvote the comment
+            comment.upvote()
+            # reply to the comment
+            reply_obj = comment.reply(ai_response)
+            reply_link = reply_obj.permalink
+            questionary.print("Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))            
+            print(reply_link)
+            return reply_obj
+        except Exception as e:
+            questionary.print("Error:", e)
+
+    
 
     # make a comment on the post it created an ai response
     def make_comment(self, post, ai_response):
-        return post.reply(ai_response)
+        """Make a comment on the post"""
+        questionary.print("Making a comment on the post...\n")
+        comment_obj = post.reply(ai_response)
+        comment_link = comment_obj.permalink
+        questionary.print("Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
+        return comment_obj
+    
 
 
 def main():
-    # Prompt user for subreddit and comment
-    subreddit_name = questionary.text("Enter the subreddit name:").ask()
+    
+    # Prompt user for subreddit name, subreddit description, and subreddit summary
+    subreddit_name = questionary.text("Enter the subreddit name: ").ask()
+    subreddit_description = questionary.text("Enter the subreddit description: ").ask()
+    subreddit_summary = questionary.text("Enter the subreddit summary: ").ask()
 
+    # ask for the path to the text file that has a list of reddit posts urls
+    path = questionary.text("Enter the path to the text file with the list of reddit posts urls: ").ask()
+
+    # open the text file and read the urls into a list
+    with open(path) as f:
+        urls = f.readlines()
+    urls = [url.strip() for url in urls]
+
+
+    questionary.print("Gaining Access to Reddit Bot...\n")
     bot = RedditBot()
     bot.connect_to_reddit()
+    questionary.print("Access Granted!!!\n...\n")
 
-    subreddit = bot.grab_subreddit(subreddit_name)
-    post = bot.grab_post(subreddit)
-    comments = bot.grab_comments(post)
-
-    # say found a post and show the link
-    questionary.print(f"Found a post in {subreddit_name}!\n")
-    questionary.print(f"Link: {post.url}\n")
-
-    # Display the post text
-    questionary.print(f"\nCurrent Post Text:\n{post.selftext}\n")
-
-
-    first_comment = None
-    ai_response = None
-    # if there are comments, respond to them
-    if len(comments) > 2:
-        comment = comments[0]
-        questionary.print(f"Current Comment Text:\n{comment.body}\n")
-         # Get the AI response
-        ai_response = bot.generate_comment(subreddit, post, comment)
-        questionary.print(f"AI Response:\n{ai_response}\n")
-    # if no comments, respond with insightful ai response
-    else:
-        comment = {
-            "body": "There are no comments",
-        }
-        questionary.print("No comments found...Creating an AI response...\n")
-        ai_response = bot.generate_comment(subreddit, post, comment, isReply=False)
-    questionary.print(f"AI Response:\n{post.url}/{ai_response}\n")
+    # for each url in the list, grab the post and comments
+    for url in urls:
+        current_post = bot.get_post_and_comments(url)
+        # like the post
+        current_post.upvote()
+        post_text = current_post.selftext
+        post_title = current_post.title
+        comments = bot.grab_comments(current_post)
+        # check if there are any comments
+        if len(comments) > 0:
+            # remove the first comment
+            comments.pop(0)
+            # for each comment, generate an ai response
+            for comment in comments:
+                print(comment)
+                response = bot.generate_comment(subreddit_name, post_text, comment['body'], post_title, subreddit_description, subreddit_summary)
+                # reply to the comment
+                bot.reply_to_comment(comment, response)
+        else:
+            # if there are no comments, generate an ai response
+            response = bot.generate_comment(subreddit_name, post_text, "There are no comments", post_title, subreddit_description, subreddit_summary)
+            # reply to the post
+            bot.make_comment(current_post, response)
 
    
 
