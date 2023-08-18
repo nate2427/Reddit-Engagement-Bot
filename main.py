@@ -45,12 +45,12 @@ class RedditBot:
 
     def grab_comments(self, post):
         """Retrieves the comments from the post"""        
-        posts = post.comments.replace_more(limit=10)
-        print(posts)
+        post.comments.replace_more(limit=0)
+        print(post.comments.list())
         questionary.print("Comments from post retrieved...\n")
-        return posts
+        return post.comments.list()
     
-    def generate_comment(self, subreddit, post, comment, post_title, subreddit_description, subreddit_summary):
+    def generate_comment(self, subreddit, post, comment, post_title, post_author, comment_author, subreddit_description, subreddit_summary):
         try:
             questionary.print("Generating AI comment...\n")
             template_dict = promptlayer.prompts.get("r_MindfulnessAudienceTemplate")
@@ -64,7 +64,9 @@ class RedditBot:
                 subreddit_summary=subreddit_summary,
                 post_text=post,
                 subreddit=subreddit,
-                post_title=post_title
+                post_title=post_title,
+                post_author=post_author,
+                comment_author=comment_author
             )
 
             # Generate the comment using OpenAI
@@ -95,7 +97,6 @@ class RedditBot:
             reply_obj = comment.reply(ai_response)
             reply_link = reply_obj.permalink
             questionary.print("Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))            
-            print(reply_link)
             return reply_obj
         except Exception as e:
             questionary.print("Error:", e)
@@ -141,6 +142,7 @@ def main():
         current_post.upvote()
         post_text = current_post.selftext
         post_title = current_post.title
+        post_author = current_post.author
         comments = bot.grab_comments(current_post)
         # check if there are any comments
         if len(comments) > 0:
@@ -148,13 +150,13 @@ def main():
             comments.pop(0)
             # for each comment, generate an ai response
             for comment in comments:
-                print(comment)
-                response = bot.generate_comment(subreddit_name, post_text, comment['body'], post_title, subreddit_description, subreddit_summary)
+                comment_author = comment.author
+                response = bot.generate_comment(subreddit_name, post_text, comment.body, post_title, post_author, comment_author, subreddit_description, subreddit_summary)
                 # reply to the comment
                 bot.reply_to_comment(comment, response)
         else:
             # if there are no comments, generate an ai response
-            response = bot.generate_comment(subreddit_name, post_text, "There are no comments", post_title, subreddit_description, subreddit_summary)
+            response = bot.generate_comment(subreddit_name, post_text, "There are no comments", post_title, post_author, "no author", subreddit_description, subreddit_summary)
             # reply to the post
             bot.make_comment(current_post, response)
 
