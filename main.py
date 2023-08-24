@@ -82,7 +82,7 @@ class RedditBot:
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-16k",
                 temperature=0.76,
-                max_tokens=300,
+                max_tokens=100,
                 messages=[
                     {"role": "system", "content": formatted_system_prompt},
                     {"role": "user", "content": "You start typing your reply..."}
