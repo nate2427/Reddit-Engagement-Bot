@@ -7,6 +7,15 @@ load_dotenv()
 promptlayer.api_key = os.getenv("PROMPTLAYER_API_KEY")
 openai = promptlayer.openai
 
+from praw.models import MoreComments
+
+def iter_top_level(comments):
+    for top_level_comment in comments:
+        if isinstance(top_level_comment, MoreComments):
+            yield from iter_top_level(top_level_comment.comments())
+        else:
+            yield top_level_comment
+
 
 class RedditBot:
     def __init__(self):
@@ -44,16 +53,16 @@ class RedditBot:
         return post
 
     def grab_comments(self, post):
-        """Retrieves the comments from the post"""        
-        post.comments.replace_more(limit=0)
-        print(post.comments.list())
+        """Retrieves the comments from the post"""   
+        comments = list(iter_top_level(post.comments))
+        print(comments)
         questionary.print("Comments from post retrieved...\n")
-        return post.comments.list()
+        return comments
     
     def generate_comment(self, subreddit, post, comment, post_title, post_author, comment_author, subreddit_description, subreddit_summary):
         try:
             questionary.print("Generating AI comment...\n")
-            template_dict = promptlayer.prompts.get("r_MindfulnessAudienceTemplate")
+            template_dict = promptlayer.prompts.get("r_ProgrammerBasicTemplate")
             system_prompt = template_dict['template']
             
 
@@ -73,7 +82,7 @@ class RedditBot:
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-16k",
                 temperature=0.76,
-                max_tokens=750,
+                max_tokens=300,
                 messages=[
                     {"role": "system", "content": formatted_system_prompt},
                     {"role": "user", "content": "You start typing your reply..."}
@@ -164,3 +173,13 @@ def main():
 
 if __name__ == '__main__':
     main()
+    # reddit = praw.Reddit(
+    #         client_id=os.getenv('REDDIT_CLIENT_ID'),
+    #         client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
+    #         user_agent='your_user_agent',
+    #         username=os.getenv('REDDIT_USERNAME'),
+    #         password=os.getenv('REDDIT_PASSWORD')
+    #     )
+    # submission = reddit.submission('15hleqq')
+    # for comment in iter_top_level(submission.comments): 
+    #     print(comment.author) 
