@@ -1,13 +1,14 @@
+from praw.models import MoreComments
 import praw
 from dotenv import load_dotenv
 import os
 import questionary
 import promptlayer
+from config import config_obj
 load_dotenv()
 promptlayer.api_key = os.getenv("PROMPTLAYER_API_KEY")
 openai = promptlayer.openai
 
-from praw.models import MoreComments
 
 def iter_top_level(comments):
     for top_level_comment in comments:
@@ -43,7 +44,7 @@ class RedditBot:
         questionary.print("Grabbing a post from the subreddit...")
         for post in subreddit.new(limit=1):
             return post
-        
+
     def get_post_and_comments(self, post_url):
         """Retrieve the post and comments from the url"""
         questionary.print("Retrieving post with url {}...\n".format(post_url))
@@ -53,18 +54,18 @@ class RedditBot:
         return post
 
     def grab_comments(self, post):
-        """Retrieves the comments from the post"""   
+        """Retrieves the comments from the post"""
         comments = list(iter_top_level(post.comments))
         print(comments)
         questionary.print("Comments from post retrieved...\n")
         return comments
-    
+
     def generate_comment(self, subreddit, post, comment, post_title, post_author, comment_author, subreddit_description, subreddit_summary):
         try:
             questionary.print("Generating AI comment...\n")
-            template_dict = promptlayer.prompts.get("r_ProgrammerBasicTemplate")
+            template_dict = promptlayer.prompts.get(
+                "r_ProgrammerBasicTemplate")
             system_prompt = template_dict['template']
-            
 
             # Replace the variables in the prompt with the comment body
             formatted_system_prompt = system_prompt.format(
@@ -81,11 +82,11 @@ class RedditBot:
             # Generate the comment using OpenAI
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-16k",
-                temperature=0.76,
-                max_tokens=100,
+                temperature=0.45,
+                max_tokens=250,
                 messages=[
                     {"role": "system", "content": formatted_system_prompt},
-                    {"role": "user", "content": "You start typing your reply..."}
+                    {"role": "user", "content": f"Respond as gpt-instructor adding value to {post_author}'s post, but that will benefit {comment_author}...Remember you are not {post_author} and this is not your post.  DONT TAKE OWNERSHIP OVER ANYTHING IN THE POST: NOT THE CONTENT, IMAGES, OR VIDEOS...DONT DO THIS!!! IF YOU ASSUME THIS IS YOUR REDDIT POST, YOU WILL BE BANNED FROM REDDIT FOREVER!!! You are simply scrolling through reddit when you see the post... "}
                 ],
             )
             response_comment = completion.choices[0]["message"]["content"]
@@ -95,7 +96,7 @@ class RedditBot:
             print("Error:", e)
             # Return a default comment if an error occurs
             return "I'm sorry, I couldn't generate a suitable comment at the moment."
-        
+
     # replies to the comment it created an ai response
     def reply_to_comment(self, comment, ai_response):
         try:
@@ -105,39 +106,50 @@ class RedditBot:
             # reply to the comment
             reply_obj = comment.reply(ai_response)
             reply_link = reply_obj.permalink
-            questionary.print("Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))            
+            questionary.print(
+                "Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))
             return reply_obj
         except Exception as e:
             questionary.print("Error:", e)
 
-    
-
     # make a comment on the post it created an ai response
+
     def make_comment(self, post, ai_response):
         """Make a comment on the post"""
         questionary.print("Making a comment on the post...\n")
         comment_obj = post.reply(ai_response)
         comment_link = comment_obj.permalink
-        questionary.print("Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
+        questionary.print(
+            "Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
         return comment_obj
-    
 
 
 def main():
-    
-    # Prompt user for subreddit name, subreddit description, and subreddit summary
-    subreddit_name = questionary.text("Enter the subreddit name: ").ask()
-    subreddit_description = questionary.text("Enter the subreddit description: ").ask()
-    subreddit_summary = questionary.text("Enter the subreddit summary: ").ask()
 
-    # ask for the path to the text file that has a list of reddit posts urls
-    path = questionary.text("Enter the path to the text file with the list of reddit posts urls: ").ask()
+    # Prompt user for subreddit name, subreddit description, and subreddit summary
+    # subreddit_name = questionary.text("Enter the subreddit name: ").ask()
+    # subreddit_description = questionary.text(
+    #     "Enter the subreddit description: ").ask()
+    # subreddit_summary = questionary.text("Enter the subreddit summary: ").ask()
+
+    # # ask for the path to the text file that has a list of reddit posts urls
+    # path = questionary.text(
+    #     "Enter the path to the text file with the list of reddit posts urls: ").ask()
+
+    subreddit_name = config_obj["subreddit"]
+    subreddit_description = config_obj['subreddit_desc']
+    subreddit_summary = config_obj['subreddit_summary']
+    path = config_obj['path_to_posts_urls']
+
+    print(f"\nSubreddit: {subreddit_name}\n")
+    print(f"Subreddit Description: \n{subreddit_description}\n")
+    print(f"Subreddit Summary: \n{subreddit_summary}\n")
+    print(f"Path To Posts: \n{path}\n")
 
     # open the text file and read the urls into a list
     with open(path) as f:
         urls = f.readlines()
     urls = [url.strip() for url in urls]
-
 
     questionary.print("Gaining Access to Reddit Bot...\n")
     bot = RedditBot()
@@ -153,6 +165,7 @@ def main():
         post_title = current_post.title
         post_author = current_post.author
         comments = bot.grab_comments(current_post)
+        print(f"Post:\n{post_author}\n{post_text}\n\n")
         # check if there are any comments
         if len(comments) > 0:
             # remove the first comment
@@ -160,16 +173,20 @@ def main():
             # for each comment, generate an ai response
             for comment in comments:
                 comment_author = comment.author
-                response = bot.generate_comment(subreddit_name, post_text, comment.body, post_title, post_author, comment_author, subreddit_description, subreddit_summary)
+                response = bot.generate_comment(subreddit_name, post_text, comment.body, post_title,
+                                                post_author, comment_author, subreddit_description, subreddit_summary)
                 # reply to the comment
-                bot.reply_to_comment(comment, response)
+                # bot.reply_to_comment(comment, response)
+                print(f"Comment:\n{comment_author}\n{comment.body}\n")
+                print(f"Reply:\n{response}\n")
+
         else:
             # if there are no comments, generate an ai response
-            response = bot.generate_comment(subreddit_name, post_text, "There are no comments", post_title, post_author, "no author", subreddit_description, subreddit_summary)
+            response = bot.generate_comment(subreddit_name, post_text, "There are no comments",
+                                            post_title, post_author, "no author", subreddit_description, subreddit_summary)
             # reply to the post
             bot.make_comment(current_post, response)
 
-   
 
 if __name__ == '__main__':
     main()
@@ -181,5 +198,5 @@ if __name__ == '__main__':
     #         password=os.getenv('REDDIT_PASSWORD')
     #     )
     # submission = reddit.submission('15hleqq')
-    # for comment in iter_top_level(submission.comments): 
-    #     print(comment.author) 
+    # for comment in iter_top_level(submission.comments):
+    #     print(comment.author)
