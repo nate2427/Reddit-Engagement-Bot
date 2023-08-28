@@ -22,7 +22,8 @@ This project is a dashboard and bot that helps with commenting and replying on t
 
          REDDIT_CLIENT_ID=your-reddit-client-id
          REDDIT_CLIENT_SECRET=your-reddit-client-secret
-         REDDIT_USERNAME=your-reddit-username REDDIT_PASSWORD=your-reddit-password
+         REDDIT_USERNAME=your-reddit-username
+         REDDIT_PASSWORD=your-reddit-password
 
 ## Usage
 
