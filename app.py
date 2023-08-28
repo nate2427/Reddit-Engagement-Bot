@@ -1,12 +1,12 @@
 import streamlit as st
 from reddit_bot import redditBot as bot
 from gpt_prompts import get_prompt, update_persona_prompt_template
-from db import get_all_persona_configs, get_all_subreddit_configs
+from db import get_all_persona_configs, get_all_subreddit_configs, add_new_persona_config, add_new_subreddit_config
 
 reddit_personas = get_all_persona_configs()
 subreddit_configs = get_all_subreddit_configs()
 
-def home_page():
+def generate_comments_page():
     col1, col2 = st.columns([1, 2])
 
     # Check if 'post_url' exists in session state
@@ -118,21 +118,38 @@ def home_page():
                         st.error("Failed to reply to comment!")
 
 
-def about_page():
-    st.write("This is the About Page!")
+def add_persona_config():
+    persona_name = st.text_input("New Persona Title", placeholder="GPT Instructor")
+    persona_prompt_id = st.text_input("Persona Prompt ID", placeholder="gpt_instructor")
+    button = st.button("Add Persona")
+    # add this persona to the db
+    if button:
+        if add_new_persona_config(persona_name, persona_prompt_id):
+            st.success("Successfully added new persona!")
+        else:
+            st.error("Failed to add new persona!")
 
-def contact_page():
-    st.write("Feel free to contact us!")
+def add_subreddit_config():
+    subreddit_name = st.text_input("New Subreddit Title", placeholder="learnpython")
+    subreddit_desc = st.text_area("Subreddit Description", placeholder="Get this from Gummy Search")
+    subreddit_summary = st.text_area("Subreddit Summary", placeholder="Get this from Gummy Search")
+    button = st.button("Add Subreddit")
+    # add this subreddit to the db
+    if button:
+        if add_new_subreddit_config(subreddit_name, subreddit_desc, subreddit_summary):
+            st.success("Successfully added new subreddit!")
+        else:
+            st.error("Failed to add new subreddit!")
 
 # Set up sidebar
-pages = ["Generate Comments", "About", "Contact"]
+pages = ["Generate Comments", "Add New Persona", "Add New Subreddit"]
 st.title("🤖 Reddit Buzz Builder 🤖")
 selected_page = st.selectbox("Pages", pages, label_visibility="hidden")
 
 # Display selected page
 if selected_page == "Generate Comments":
-    home_page()
-elif selected_page == "About":
-    about_page()
-else:
-    contact_page()
+    generate_comments_page()
+elif selected_page == "Add New Persona":
+    add_persona_config()
+elif selected_page == "Add New Subreddit":
+    add_subreddit_config()

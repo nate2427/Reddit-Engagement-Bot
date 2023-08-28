@@ -24,10 +24,10 @@ reddit_personas_collection = reddit_db.persona_configs
 # Get the subreddit_configs Reddit collection
 reddit_subreddit_configs_collection = reddit_db.subreddit_configs
 
-def add_new_persona_config(persona_name, persona):
+def add_new_persona_config(persona_name, persona_template_id):
     new_persona_config = {
         "persona_name": persona_name,
-        "persona": persona
+        "persona_template_id": persona_template_id
     }
     try:
         reddit_personas_collection.insert_one(new_persona_config)
@@ -43,7 +43,7 @@ def get_all_persona_configs():
         persona_configs = list(reddit_personas_collection.find({}, {"_id": 0}))
         personas = {}
         for persona_config in persona_configs:
-            personas[persona_config['persona_name']] = persona_config['persona']
+            personas[persona_config['persona_name']] = persona_config['persona_template_id']
         return personas
     except Exception as e:
         print(e)
