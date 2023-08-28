@@ -60,6 +60,71 @@ class RedditBot:
         # questionary.print("Comments from post retrieved...\n")
         return comments
 
+    def generate_comment_to_post(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template):
+        """Generates an AI comment"""
+        try:
+            formatted_system_prompt = prompt_template.format(
+                comment=comment,
+                subreddit_description=subreddit_description,
+                subreddit_summary=subreddit_summary,
+                post_text=post,
+                subreddit=subreddit,
+                post_title=post_title,
+                post_author=post_author,
+                comment_author=comment_author
+            )
+
+            completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-16k",
+                temperature=0.45,
+                max_tokens=250,
+                messages=[
+                    
+                    {"role": "system", "content": formatted_system_prompt},
+                    {"role": "user", "content": f"Respond to the post as gpt-instructor adding value to {post_author}'s post. Add nuaced insight and ask an engaging question thats optimized to get a response from {post_author}..."}
+                ]
+            )
+            response_comment = completion.choices[0]["message"]["content"]
+
+            return response_comment
+        except Exception as e:
+            print("Error:", e)
+            return None
+        
+    def regenerate_comment_to_post(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template, old_ai_comment):
+        """Regenerates an AI comment"""
+        try:
+            # questionary.print("Regenerating AI comment...\n")
+            # Replace the variables in the prompt with the comment body
+            formatted_system_prompt = prompt_template.format(
+                comment=comment,
+                subreddit_description=subreddit_description,
+                subreddit_summary=subreddit_summary,
+                post_text=post,
+                subreddit=subreddit,
+                post_title=post_title,
+                post_author=post_author,
+                comment_author=comment_author
+            )
+            # add the old ai comment
+            formatted_system_prompt = f"{formatted_system_prompt}\n\nHere is the comment you previously generated:\n{old_ai_comment}"
+            # Generate the comment using OpenAI
+            completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-16k",
+                temperature=0.45,
+                max_tokens=250,
+                messages=[
+                    {"role": "system", "content": formatted_system_prompt},
+                    {"role": "user", "content": f"Regenerate the comment for the post so that it adds even more value, asks a better question, and gets a guaranteed response from {post_author}."}
+                ]
+            )
+            response_comment = completion.choices[0]["message"]["content"]
+            return response_comment
+        except Exception as e:
+            print("Error:", e)
+            return None
+
+
     def generate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template):
         """Generates an AI comment"""
         try:
@@ -148,12 +213,14 @@ class RedditBot:
 
     def make_comment(self, post, ai_response):
         """Make a comment on the post"""
-        questionary.print("Making a comment on the post...\n")
-        comment_obj = post.reply(ai_response)
-        comment_link = comment_obj.permalink
-        questionary.print(
-            "Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
-        return comment_obj
+        # questionary.print("Making a comment on the post...\n")
+        try:
+            comment_obj = post.reply(ai_response)
+            comment_link = comment_obj.permalink
+            return comment_obj
+        except Exception as e:
+            questionary.print("Error:", e)
+            return None
 
 def main():
 

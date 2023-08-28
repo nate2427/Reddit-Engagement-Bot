@@ -72,6 +72,34 @@ def generate_comments_page():
         subr_desc = desc_col.text_area("Subreddit Description", f"{st.session_state.subreddit_description}", height=150)
         subr_summary = summary_col.text_area("Subreddit Summary", f"{st.session_state.subreddit_summary}", height=150)
 
+        # write a comment on post section
+        st.header("Generate a Comment on the Post")
+        comment_container = st.empty()
+        comment_but_col1, comment_but_col2, comment_but_col3 = st.columns(3)
+        generate_comment_button = comment_but_col1.button("Generate Comment", key="generate_comment")
+        regenerate_comment_button = comment_but_col2.button("Regenerate Comment", key="regenerate_comment", disabled="generated_comment" not in st.session_state)
+        post_comment_button = comment_but_col3.button("Post Comment", key="post_comment", disabled="generated_comment" not in st.session_state)
+        if generate_comment_button:
+            with st.spinner("Generating..."):
+                ai_generated_comment = bot.generate_comment_to_post(selected_subreddit, st.session_state.post.selftext, "", st.session_state.post.title, st.session_state.post.author, "", subr_desc, subr_summary, persona_prompt_text_area)
+                comment_container.empty()
+            st.session_state.generated_comment = comment_container.text_area("🤖 AI Generated Comment 📝:", f"{ai_generated_comment}", height=200, key="ngenerated_comment_0")
+            st.experimental_rerun()
+        elif "generated_comment" in st.session_state:
+            st.session_state.generated_comment = comment_container.text_area("🤖 AI Generated Comment 📝:", f"{st.session_state.generated_comment}", height=200, key="generated_comment_0")
+
+        if regenerate_comment_button:
+            with st.spinner("Regenerating..."):
+                ai_regenerated_comment = bot.regenerate_comment_to_post(selected_subreddit, st.session_state.post.selftext, "", st.session_state.post.title, st.session_state.post.author, "", subr_desc, subr_summary, persona_prompt_text_area, st.session_state.generated_comment)
+                comment_container.empty()
+            st.session_state.generated_comment = comment_container.text_area("🤖 AI Generated Comment 📝:", f"{ai_regenerated_comment}", height=200, key="regenerated_comment_0")
+
+        if post_comment_button:
+            with st.spinner("Posting..."):
+                if bot.make_comment(st.session_state.post, st.session_state.generated_comment):
+                    st.success("Comment Posted!")
+                else:
+                    st.error("Failed to post comment!")
 
         # comments section
         st.header("Top Level Comments")
