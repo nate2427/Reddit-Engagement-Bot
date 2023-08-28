@@ -81,7 +81,7 @@ class RedditBot:
                 messages=[
                     
                     {"role": "system", "content": formatted_system_prompt},
-                    {"role": "user", "content": f"Respond to the post as gpt-instructor adding value to {post_author}'s post. Add nuaced insight and ask an engaging question thats optimized to get a response from {post_author}..."}
+                    {"role": "user", "content": f"Respond to the post adding value to {post_author}'s post. Add nuaced insight and ask an engaging question thats optimized to get a response from {post_author}..."}
                 ]
             )
             response_comment = completion.choices[0]["message"]["content"]
@@ -125,7 +125,7 @@ class RedditBot:
             return None
 
 
-    def generate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template):
+    def generate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, ai_comment, prompt_template):
         """Generates an AI comment"""
         try:
             # questionary.print("Generating AI comment...\n")
@@ -141,6 +141,8 @@ class RedditBot:
                 post_author=post_author,
                 comment_author=comment_author
             )
+            # concatenate in the AI comment
+            formatted_system_prompt = f"{formatted_system_prompt}\n\nHere is the comment you left on the post. Make sure that your reply to the commenter is relevant to your comment to the post. Make them connect but still address {comment_author}:\n{ai_comment}"
 
             # Generate the comment using OpenAI
             completion = openai.ChatCompletion.create(
@@ -149,7 +151,7 @@ class RedditBot:
                 max_tokens=250,
                 messages=[
                     {"role": "system", "content": formatted_system_prompt},
-                    {"role": "user", "content": f"Respond as gpt-instructor adding value to {post_author}'s post, but that will benefit {comment_author}...Remember you are not {post_author} and this is not your post.  DONT TAKE OWNERSHIP OVER ANYTHING IN THE POST: NOT THE CONTENT, IMAGES, OR VIDEOS...DONT DO THIS!!! IF YOU ASSUME THIS IS YOUR REDDIT POST, YOU WILL BE BANNED FROM REDDIT FOREVER!!! You are simply scrolling through reddit when you see the post... "}
+                    {"role": "user", "content": f"Respond adding value to {post_author}'s post, but that will benefit {comment_author}...Remember you are not {post_author} and this is not your post.  DONT TAKE OWNERSHIP OVER ANYTHING IN THE POST: NOT THE CONTENT, IMAGES, OR VIDEOS...DONT DO THIS!!! IF YOU ASSUME THIS IS YOUR REDDIT POST, YOU WILL BE BANNED FROM REDDIT FOREVER!!! You are simply scrolling through reddit when you see the post... "}
                 ],
             )
             response_comment = completion.choices[0]["message"]["content"]
@@ -160,7 +162,7 @@ class RedditBot:
             # Return a default comment if an error occurs
             return "I'm sorry, I couldn't generate a suitable comment at the moment."
         
-    def regenerate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template, old_ai_comment):
+    def regenerate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template, ai_comment, old_ai_comment):
         """Regenerates an AI comment"""
         try:
             # questionary.print("Regenerating AI comment...\n")
@@ -175,6 +177,10 @@ class RedditBot:
                 post_author=post_author,
                 comment_author=comment_author
             )
+
+            # concatenate in the AI comment
+            formatted_system_prompt = f"{formatted_system_prompt}\n\nHere is the comment you left on the post. Make sure that your reply to the commenter is relevant to your comment to the post. Make them connect but still address {comment_author}:\n{ai_comment}"
+
             # Generate the comment using OpenAI
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo-16k",

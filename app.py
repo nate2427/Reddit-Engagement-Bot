@@ -119,7 +119,7 @@ def generate_comments_page():
             
             if generate_ai_comment_button:
                 with st.spinner("Generating..."):
-                    ai_comment = bot.generate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area)
+                    ai_comment = bot.generate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, st.session_state.generated_comment, persona_prompt_text_area)
 
                 st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_comment_{}".format(str(i)))
                 st.experimental_rerun()
@@ -131,7 +131,7 @@ def generate_comments_page():
             if regenerate_button:
                 container.empty()
                 with st.spinner("Regenerating..."):
-                    ai_comment = bot.regenerate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area, st.session_state.ai_comments[i])
+                    ai_comment = bot.regenerate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, st.session_state.generated_comment, persona_prompt_text_area, st.session_state.ai_comments[i])
 
                 st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_regen_comment_{}".format(str(i)))
 
