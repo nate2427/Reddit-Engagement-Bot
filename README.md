@@ -12,6 +12,18 @@ This project is a dashboard and bot that helps with commenting and replying on t
 
 `pip install -r requirements.txt`
 
+3. Rename the `._.env` file to `.env`:
+
+`mv _.env .env`
+
+4.  Update the `.env` file with the appropriate values for your Reddit API credentials and other settings.
+
+    Example `.env` file:
+
+         REDDIT_CLIENT_ID=your-reddit-client-id
+         REDDIT_CLIENT_SECRET=your-reddit-client-secret
+         REDDIT_USERNAME=your-reddit-username REDDIT_PASSWORD=your-reddit-password
+
 ## Usage
 
 1. Go to the project directory:
