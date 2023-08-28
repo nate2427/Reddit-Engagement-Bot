@@ -81,8 +81,8 @@ def home_page():
             comment_author = comment.author
             comment_body = comment.body
             st.text_area("Comment", f"{comment_body}", height=50, label_visibility="hidden", key="comment_{}".format(str(i)), disabled=True)
-            st.text(f"Author: {comment_author}")
             container = st.empty()
+            st.text(f"Author: {comment_author}")
             # Buttons to interact with comment
             but_col1, but_col2, but_col3 = st.columns(3)
             generate_ai_comment_button = but_col1.button("Generate AI\nResponse", key=f'generate_ai_comment_{i}')
@@ -92,12 +92,11 @@ def home_page():
             # Generate Button Click Handler
             
             if generate_ai_comment_button:
-                with st.spinner("Regenerating..."):
+                with st.spinner("Generating..."):
                     ai_comment = bot.generate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area)
 
                 st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_comment_{}".format(str(i)))
-
-
+                st.experimental_rerun()
             elif i in st.session_state.ai_comments:
                 st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{st.session_state.ai_comments[i]}", height=200, key="ai_comment_{}".format(str(i)))
 
@@ -105,7 +104,7 @@ def home_page():
             # Regenerate Button Click Handler
             if regenerate_button:
                 container.empty()
-                with st.spinner("Generating..."):
+                with st.spinner("Regenerating..."):
                     ai_comment = bot.regenerate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area, st.session_state.ai_comments[i])
 
                 st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_regen_comment_{}".format(str(i)))
