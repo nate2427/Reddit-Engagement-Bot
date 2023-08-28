@@ -60,15 +60,13 @@ class RedditBot:
         questionary.print("Comments from post retrieved...\n")
         return comments
 
-    def generate_comment(self, subreddit, post, comment, post_title, post_author, comment_author, subreddit_description, subreddit_summary):
+    def generate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template):
+        """Generates an AI comment"""
         try:
             questionary.print("Generating AI comment...\n")
-            template_dict = promptlayer.prompts.get(
-                "r_ProgrammerBasicTemplate")
-            system_prompt = template_dict['template']
 
             # Replace the variables in the prompt with the comment body
-            formatted_system_prompt = system_prompt.format(
+            formatted_system_prompt = prompt_template.format(
                 comment=comment,
                 subreddit_description=subreddit_description,
                 subreddit_summary=subreddit_summary,
@@ -96,10 +94,44 @@ class RedditBot:
             print("Error:", e)
             # Return a default comment if an error occurs
             return "I'm sorry, I couldn't generate a suitable comment at the moment."
+        
+    def regenerate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template, old_ai_comment):
+        """Regenerates an AI comment"""
+        try:
+            questionary.print("Regenerating AI comment...\n")
+            # Replace the variables in the prompt with the comment body
+            formatted_system_prompt = prompt_template.format(
+                comment=comment,
+                subreddit_description=subreddit_description,
+                subreddit_summary=subreddit_summary,
+                post_text=post,
+                subreddit=subreddit,
+                post_title=post_title,
+                post_author=post_author,
+                comment_author=comment_author
+            )
+            # Generate the comment using OpenAI
+            completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo-16k",
+                temperature=0.45,
+                max_tokens=250,
+                messages=[
+                    {"role": "system", "content": formatted_system_prompt},
+                    {"role": "user", "content": f"You recently generated the following comment:\n{old_ai_comment}\n\nI need you to regenerate to boost for engagement. Maybe ask a question about what they said."}
+                ]
+            )
+            response_comment = completion.choices[0]["message"]["content"]
+            questionary.print("AI comment regenerated...\n")
+            return response_comment
+        except Exception as e:
+            print("Error:", e)
+            # Return a default comment if an error occurs
+            return "I'm sorry, I couldn't generate a suitable comment at the moment."
 
     # replies to the comment it created an ai response
     def reply_to_comment(self, comment, ai_response):
         try:
+            print(comment, ai_response)
             questionary.print("Replying to comment...\n")
             # upvote the comment
             comment.upvote()
@@ -111,6 +143,7 @@ class RedditBot:
             return reply_obj
         except Exception as e:
             questionary.print("Error:", e)
+            return None
 
     # make a comment on the post it created an ai response
 

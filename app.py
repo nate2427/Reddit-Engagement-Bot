@@ -21,9 +21,6 @@ def home_page():
 
     if 'comments' not in st.session_state:
         st.session_state.comments = []
-    
-    if 'selected_persona' not in st.session_state:
-        st.session_state.selected_persona = ""
 
     if 'post' not in st.session_state:
         st.session_state.post = ""
@@ -85,22 +82,43 @@ def home_page():
             comment_body = comment.body
             st.text_area("Comment", f"{comment_body}", height=50, label_visibility="hidden", key="comment_{}".format(str(i)), disabled=True)
             st.text(f"Author: {comment_author}")
-            container = st.container()
+            container = st.empty()
             # Buttons to interact with comment
             but_col1, but_col2, but_col3 = st.columns(3)
             generate_ai_comment_button = but_col1.button("Generate AI\nResponse", key=f'generate_ai_comment_{i}')
             regenerate_button = but_col2.button("Regenerate Response", key=f'regenerate_{i}', disabled=i not in st.session_state.ai_comments)
-            post_comment_button = but_col3.button("Post Comment", key=f'post_comment_{i}', disabled=i not in st.session_state.ai_comments)
+            post_reply_button = but_col3.button("Reply to Comment", key=f'post_comment_{i}', disabled=i not in st.session_state.ai_comments)
 
+            # Generate Button Click Handler
+            
             if generate_ai_comment_button:
-                ai_comment = "Your AI generated comment here"  # Replace with your AI comment generation logic
-                st.session_state.ai_comments[i] = ai_comment
-                container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=100, key="ai_comment_{}".format(str(i)))
-            elif i in st.session_state.ai_comments:
-                container.text_area("🤖 AI Generated Comment 📝:", f"{st.session_state.ai_comments[i]}", height=100, key="ai_comment_{}".format(str(i)))
+                with st.spinner("Regenerating..."):
+                    ai_comment = bot.generate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area)
 
-def update_persona(persona):
-    st.session_state.selected_persona = persona
+                st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_comment_{}".format(str(i)))
+
+
+            elif i in st.session_state.ai_comments:
+                st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{st.session_state.ai_comments[i]}", height=200, key="ai_comment_{}".format(str(i)))
+
+
+            # Regenerate Button Click Handler
+            if regenerate_button:
+                container.empty()
+                with st.spinner("Generating..."):
+                    ai_comment = bot.regenerate_comment(selected_subreddit, st.session_state.post.selftext, comment_body, st.session_state.post.title, st.session_state.post.author, comment_author, subr_desc, subr_summary, persona_prompt_text_area, st.session_state.ai_comments[i])
+
+                st.session_state.ai_comments[i] = container.text_area("🤖 AI Generated Comment 📝:", f"{ai_comment}", height=200, key="ai_regen_comment_{}".format(str(i)))
+
+
+            # Post Comment Button Click Handler
+            if post_reply_button:
+                with st.spinner("Replying..."):
+                    if bot.reply_to_comment(comment, st.session_state.ai_comments[i]):
+                        container.empty()
+                        st.success("Successfully replied to comment!")
+                    else:
+                        st.error("Failed to reply to comment!")
 
 
 def about_page():
