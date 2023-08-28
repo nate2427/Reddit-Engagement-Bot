@@ -1,12 +1,10 @@
 import streamlit as st
 from reddit_bot import redditBot as bot
 from gpt_prompts import get_prompt, update_persona_prompt_template
-from config import subreddit_configs
+from db import get_all_persona_configs, get_all_subreddit_configs
 
-reddit_personas = {
-    "General Coding Tutor": "r_ProgrammerBasicTemplate",
-    "Mindfulness Practitioner": "r_mindfulnessaudiencetemplate",
-}
+reddit_personas = get_all_persona_configs()
+subreddit_configs = get_all_subreddit_configs()
 
 def home_page():
     col1, col2 = st.columns([1, 2])
@@ -129,7 +127,7 @@ def contact_page():
 # Set up sidebar
 pages = ["Generate Comments", "About", "Contact"]
 st.title("🤖 Reddit Buzz Builder 🤖")
-selected_page = st.selectbox("", pages)
+selected_page = st.selectbox("Pages", pages, label_visibility="hidden")
 
 # Display selected page
 if selected_page == "Generate Comments":

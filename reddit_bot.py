@@ -32,38 +32,38 @@ class RedditBot:
 
     def connect_to_reddit(self):
         # Connect to Reddit API using provided credentials
-        questionary.print("Logging in to Reddit...")
+        # questionary.print("Logging in to Reddit...")
         self.reddit.read_only = False
-        questionary.print("Logged in successfully!")
+        # questionary.print("Logged in successfully!")
 
     def grab_subreddit(self, subreddit_name):
         subreddit = self.reddit.subreddit(subreddit_name)
         return subreddit
 
     def grab_post(self, subreddit):
-        questionary.print("Grabbing a post from the subreddit...")
+        # questionary.print("Grabbing a post from the subreddit...")
         for post in subreddit.new(limit=1):
             return post
 
     def get_post_and_comments(self, post_url):
         """Retrieve the post and comments from the url"""
-        questionary.print("Retrieving post with url {}...\n".format(post_url))
+        # questionary.print("Retrieving post with url {}...\n".format(post_url))
         post = self.reddit.submission(url=post_url)
-        print(post.comments)
-        questionary.print("Post with url {} retrieved...\n".format(post_url))
+        # print(post.comments)
+        # questionary.print("Post with url {} retrieved...\n".format(post_url))
         return post
 
     def grab_comments(self, post):
         """Retrieves the comments from the post"""
         comments = list(iter_top_level(post.comments))
-        print(comments)
-        questionary.print("Comments from post retrieved...\n")
+        # print(comments)
+        # questionary.print("Comments from post retrieved...\n")
         return comments
 
     def generate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template):
         """Generates an AI comment"""
         try:
-            questionary.print("Generating AI comment...\n")
+            # questionary.print("Generating AI comment...\n")
 
             # Replace the variables in the prompt with the comment body
             formatted_system_prompt = prompt_template.format(
@@ -88,7 +88,7 @@ class RedditBot:
                 ],
             )
             response_comment = completion.choices[0]["message"]["content"]
-            questionary.print("AI comment generated...\n")
+            # questionary.print("AI comment generated...\n")
             return response_comment
         except Exception as e:
             print("Error:", e)
@@ -98,7 +98,7 @@ class RedditBot:
     def regenerate_comment(self, subreddit: str, post: str, comment: str, post_title, post_author, comment_author, subreddit_description, subreddit_summary, prompt_template, old_ai_comment):
         """Regenerates an AI comment"""
         try:
-            questionary.print("Regenerating AI comment...\n")
+            # questionary.print("Regenerating AI comment...\n")
             # Replace the variables in the prompt with the comment body
             formatted_system_prompt = prompt_template.format(
                 comment=comment,
@@ -121,7 +121,7 @@ class RedditBot:
                 ]
             )
             response_comment = completion.choices[0]["message"]["content"]
-            questionary.print("AI comment regenerated...\n")
+            # questionary.print("AI comment regenerated...\n")
             return response_comment
         except Exception as e:
             print("Error:", e)
@@ -131,15 +131,14 @@ class RedditBot:
     # replies to the comment it created an ai response
     def reply_to_comment(self, comment, ai_response):
         try:
-            print(comment, ai_response)
-            questionary.print("Replying to comment...\n")
+            # questionary.print("Replying to comment...\n")
             # upvote the comment
             comment.upvote()
             # reply to the comment
             reply_obj = comment.reply(ai_response)
             reply_link = reply_obj.permalink
-            questionary.print(
-                "Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))
+            # questionary.print(
+            #     "Successfully replied to comment: https://www.reddit.com{}...\n".format(reply_link))
             return reply_obj
         except Exception as e:
             questionary.print("Error:", e)
@@ -175,10 +174,10 @@ def main():
     subreddit_summary = subreddit_configs['subreddit_summary']
     path = subreddit_configs['path_to_posts_urls']
 
-    print(f"\nSubreddit: {subreddit_name}\n")
-    print(f"Subreddit Description: \n{subreddit_description}\n")
-    print(f"Subreddit Summary: \n{subreddit_summary}\n")
-    print(f"Path To Posts: \n{path}\n")
+    # print(f"\nSubreddit: {subreddit_name}\n")
+    # print(f"Subreddit Description: \n{subreddit_description}\n")
+    # print(f"Subreddit Summary: \n{subreddit_summary}\n")
+    # print(f"Path To Posts: \n{path}\n")
 
     # open the text file and read the urls into a list
     with open(path) as f:
