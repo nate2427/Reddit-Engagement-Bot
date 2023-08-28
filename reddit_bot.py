@@ -155,8 +155,6 @@ class RedditBot:
             "Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
         return comment_obj
 
-redditBot = RedditBot() 
-
 def main():
 
     # Prompt user for subreddit name, subreddit description, and subreddit summary
@@ -220,17 +218,4 @@ def main():
             # reply to the post
             bot.make_comment(current_post, response)
 
-
-if __name__ == '__main__':
-    # main()
-    # reddit = praw.Reddit(
-    #         client_id=os.getenv('REDDIT_CLIENT_ID'),
-    #         client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
-    #         user_agent='your_user_agent',
-    #         username=os.getenv('REDDIT_USERNAME'),
-    #         password=os.getenv('REDDIT_PASSWORD')
-    #     )
-    # submission = reddit.submission('15hleqq')
-    # for comment in iter_top_level(submission.comments):
-    #     print(comment.author)
-    pass
+redditBot = RedditBot() 
