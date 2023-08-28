@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 import questionary
 import promptlayer
-from config import config_obj
+from config import subreddit_configs
 load_dotenv()
 promptlayer.api_key = os.getenv("PROMPTLAYER_API_KEY")
 openai = promptlayer.openai
@@ -123,6 +123,7 @@ class RedditBot:
             "Successfully made a comment: https://www.reddit.com{} ...\n".format(comment_link))
         return comment_obj
 
+redditBot = RedditBot() 
 
 def main():
 
@@ -136,10 +137,10 @@ def main():
     # path = questionary.text(
     #     "Enter the path to the text file with the list of reddit posts urls: ").ask()
 
-    subreddit_name = config_obj["subreddit"]
-    subreddit_description = config_obj['subreddit_desc']
-    subreddit_summary = config_obj['subreddit_summary']
-    path = config_obj['path_to_posts_urls']
+    subreddit_name = subreddit_configs["subreddit"]
+    subreddit_description = subreddit_configs['subreddit_desc']
+    subreddit_summary = subreddit_configs['subreddit_summary']
+    path = subreddit_configs['path_to_posts_urls']
 
     print(f"\nSubreddit: {subreddit_name}\n")
     print(f"Subreddit Description: \n{subreddit_description}\n")
@@ -189,7 +190,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # main()
     # reddit = praw.Reddit(
     #         client_id=os.getenv('REDDIT_CLIENT_ID'),
     #         client_secret=os.getenv('REDDIT_CLIENT_SECRET'),
@@ -200,3 +201,4 @@ if __name__ == '__main__':
     # submission = reddit.submission('15hleqq')
     # for comment in iter_top_level(submission.comments):
     #     print(comment.author)
+    pass
